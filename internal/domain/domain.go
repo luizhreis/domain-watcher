@@ -20,15 +20,15 @@ func NewDomain(storage storage.Storage) Domain {
 	}
 }
 
-func (d *domain) Create(domain *models.Domain) error {
+func (d *domain) Create(domain *models.Domain) (uuid.UUID, error) {
 	timestamp := time.Now()
-	domain.ID = uuid.New() 
 	domain.CreatedAt = timestamp
 	domain.UpdatedAt = timestamp
 
-	if err := d.storage.CreateDomain(domain); err != nil {
-		return err
+	id, err := d.storage.CreateDomain(domain)
+	if err != nil {
+		return uuid.Nil, err
 	}
 
-	return nil
+	return id, nil
 }

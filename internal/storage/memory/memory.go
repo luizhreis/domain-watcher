@@ -26,11 +26,8 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 // CreateDomain cria um novo domínio no storage
-func (m *MemoryStorage) CreateDomain(domain *models.Domain) error {
-	// Gera um novo UUID se não foi fornecido
-	if domain.ID == uuid.Nil {
-		domain.ID = uuid.New()
-	}
+func (m *MemoryStorage) CreateDomain(domain *models.Domain) (uuid.UUID, error) {
+	domain.ID = uuid.New()
 
 	// Define timestamps
 	now := time.Now()
@@ -40,7 +37,7 @@ func (m *MemoryStorage) CreateDomain(domain *models.Domain) error {
 	// Armazena no map
 	m.domains[domain.ID] = domain
 
-	return nil
+	return domain.ID, nil
 }
 
 // GetDomain busca um domínio pelo ID

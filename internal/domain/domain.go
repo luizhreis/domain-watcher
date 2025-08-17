@@ -59,6 +59,39 @@ func (d *domain) List(page, pageSize int) ([]*models.Domain, error) {
 	return domains, nil
 }
 
+func (d *domain) Update(domain *models.Domain) error {
+	if domain == nil {
+		return ErrInvalidDomain
+	}
+
+	if !isValidUUID(domain.ID) {
+		return ErrInvalidUUID
+	}
+
+	// Atualiza o timestamp de UpdatedAt
+	domain.UpdatedAt = time.Now()
+
+	err := d.storage.UpdateDomain(domain)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *domain) Delete(id uuid.UUID) error {
+	if !isValidUUID(id) {
+		return ErrInvalidUUID
+	}
+
+	err := d.storage.DeleteDomain(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func isValidUUID(id uuid.UUID) bool {
 	return id != uuid.Nil
 }

@@ -46,6 +46,19 @@ func (d *domain) Get(id uuid.UUID) (*models.Domain, error) {
 	return domain, nil
 }
 
+func (d *domain) List(page, pageSize int) ([]*models.Domain, error) {
+	if page < 1 || pageSize < 1 {
+		return nil, ErrInvalidPagination
+	}
+
+	domains, err := d.storage.ListDomains(page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return domains, nil
+}
+
 func isValidUUID(id uuid.UUID) bool {
 	return id != uuid.Nil
 }

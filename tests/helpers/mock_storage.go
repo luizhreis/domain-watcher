@@ -13,6 +13,7 @@ type MockStorage struct {
 	domains                 map[uuid.UUID]*models.Domain
 	callHistory             []string
 	createDomainShouldError bool
+	getDomainShouldError    bool
 }
 
 var _ storage.Storage = (*MockStorage)(nil)
@@ -40,6 +41,11 @@ func (m *MockStorage) CreateDomain(domain *models.Domain) (uuid.UUID, error) {
 
 func (m *MockStorage) GetDomain(id uuid.UUID) (*models.Domain, error) {
 	m.callHistory = append(m.callHistory, "GetDomain")
+
+	if m.getDomainShouldError {
+		return nil, errors.New("mock get domain error")
+	}
+
 	domain, exists := m.domains[id]
 	if !exists {
 		return nil, storage.ErrDomainNotFound
@@ -85,9 +91,14 @@ func (m *MockStorage) ClearCallHistory() {
 func (m *MockStorage) Reset() {
 	m.domains = make(map[uuid.UUID]*models.Domain)
 	m.createDomainShouldError = false
+	m.getDomainShouldError = false
 	m.ClearCallHistory()
 }
 
 func (m *MockStorage) SetCreateDomainError(shouldError bool) {
 	m.createDomainShouldError = shouldError
+}
+
+func (m *MockStorage) SetGetDomainError(shouldError bool) {
+	m.getDomainShouldError = shouldError
 }

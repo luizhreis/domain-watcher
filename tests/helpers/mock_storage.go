@@ -14,6 +14,7 @@ type MockStorage struct {
 	callHistory             []string
 	createDomainShouldError bool
 	getDomainShouldError    bool
+	listDomainsShouldError  bool
 }
 
 var _ storage.Storage = (*MockStorage)(nil)
@@ -62,6 +63,39 @@ func (m *MockStorage) GetAllDomains() ([]*models.Domain, error) {
 	return domains, nil
 }
 
+func (m *MockStorage) ListDomains(page, pageSize int) ([]*models.Domain, error) {
+	m.callHistory = append(m.callHistory, "ListDomains")
+
+	if m.listDomainsShouldError {
+		return nil, errors.New("mock list domains error")
+	}
+
+	if page < 1 || pageSize < 1 {
+		return nil, errors.New("page and pageSize must be greater than 0")
+	}
+
+	// Converte map para slice para permitir paginação
+	allDomains := make([]*models.Domain, 0, len(m.domains))
+	for _, domain := range m.domains {
+		allDomains = append(allDomains, domain)
+	}
+
+	// Calcula offset
+	startIndex := (page - 1) * pageSize
+	endIndex := startIndex + pageSize
+
+	// Verifica limites
+	if startIndex >= len(allDomains) {
+		return []*models.Domain{}, nil // Página vazia, mas não é erro
+	}
+
+	if endIndex > len(allDomains) {
+		endIndex = len(allDomains)
+	}
+
+	return allDomains[startIndex:endIndex], nil
+}
+
 func (m *MockStorage) UpdateDomain(domain *models.Domain) error {
 	m.callHistory = append(m.callHistory, "UpdateDomain")
 	if _, exists := m.domains[domain.ID]; !exists {
@@ -92,6 +126,7 @@ func (m *MockStorage) Reset() {
 	m.domains = make(map[uuid.UUID]*models.Domain)
 	m.createDomainShouldError = false
 	m.getDomainShouldError = false
+	m.listDomainsShouldError = false
 	m.ClearCallHistory()
 }
 
@@ -101,4 +136,8 @@ func (m *MockStorage) SetCreateDomainError(shouldError bool) {
 
 func (m *MockStorage) SetGetDomainError(shouldError bool) {
 	m.getDomainShouldError = shouldError
+}
+
+func (m *MockStorage) SetListDomainsError(shouldError bool) {
+	m.listDomainsShouldError = shouldError
 }

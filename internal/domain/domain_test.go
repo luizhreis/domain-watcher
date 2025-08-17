@@ -106,53 +106,182 @@ func TestGetDomainInvalidUUID(t *testing.T) {
 	}
 }
 
+// TestListDomains testa a listagem de domínios com paginação (white-box)
+func TestListDomains(t *testing.T) {
+	storage := helpers.NewMockStorage()
+	domain := NewDomain(storage)
+
+	// Cria alguns domínios para testar a paginação
+	domains := []*models.Domain{
+		{Name: "test1.com", URL: "test1.com", Timeout: 30},
+		{Name: "test2.com", URL: "test2.com", Timeout: 30},
+		{Name: "test3.com", URL: "test3.com", Timeout: 30},
+		{Name: "test4.com", URL: "test4.com", Timeout: 30},
+		{Name: "test5.com", URL: "test5.com", Timeout: 30},
+	}
+
+	// Cria os domínios
+	for _, d := range domains {
+		_, err := domain.Create(d)
+		if err != nil {
+			t.Errorf("Failed to create domain: %v", err)
+		}
+	}
+
+	// Testa paginação - primeira página com 2 itens
+	page1, err := domain.List(1, 2)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(page1) != 2 {
+		t.Errorf("Expected 2 domains in page 1, got %d", len(page1))
+	}
+
+	// Testa paginação - segunda página com 2 itens
+	page2, err := domain.List(2, 2)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(page2) != 2 {
+		t.Errorf("Expected 2 domains in page 2, got %d", len(page2))
+	}
+
+	// Testa paginação - terceira página com 1 item restante
+	page3, err := domain.List(3, 2)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(page3) != 1 {
+		t.Errorf("Expected 1 domain in page 3, got %d", len(page3))
+	}
+
+	// Verifica chamadas ao storage (5 Create + 3 ListDomains)
+	expectedCalls := 5 + 3
+	if len(storage.GetCallHistory()) != expectedCalls {
+		t.Errorf("Expected %d calls to storage, got %d", expectedCalls, len(storage.GetCallHistory()))
+	}
+}
+
+// TestListDomainsInvalidPagination testa parâmetros de paginação inválidos (white-box)
+func TestListDomainsInvalidPagination(t *testing.T) {
+	storage := helpers.NewMockStorage()
+	domain := NewDomain(storage)
+
+	tests := []struct {
+		name     string
+		page     int
+		pageSize int
+	}{
+		{"Zero page", 0, 10},
+		{"Negative page", -1, 10},
+		{"Zero pageSize", 1, 0},
+		{"Negative pageSize", 1, -1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := domain.List(tt.page, tt.pageSize)
+			if err == nil {
+				t.Errorf("Expected error for %s, got nil", tt.name)
+			}
+		})
+	}
+
+	// Nenhuma chamada ao storage deve ter sido feita
+	if len(storage.GetCallHistory()) != 0 {
+		t.Errorf("Expected 0 calls to storage, got %d", len(storage.GetCallHistory()))
+	}
+}
+
+// TestListDomainsEmptyResult testa paginação com resultado vazio (white-box)
+func TestListDomainsEmptyResult(t *testing.T) {
+	storage := helpers.NewMockStorage()
+	domain := NewDomain(storage)
+
+	// Não cria nenhum domínio, então resultado deve ser vazio
+
+	result, err := domain.List(1, 10)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(result) != 0 {
+		t.Errorf("Expected empty result, got %d domains", len(result))
+	}
+
+	// Verifica se foi chamado o storage
+	if len(storage.GetCallHistory()) != 1 {
+		t.Errorf("Expected 1 call to ListDomains, got %d", len(storage.GetCallHistory()))
+	}
+}
+
+// TestListDomainsStorageError testa erro do storage ao listar domínios (white-box)
+func TestListDomainsStorageError(t *testing.T) {
+	storage := helpers.NewMockStorage()
+	storage.SetListDomainsError(true)
+	domain := NewDomain(storage)
+
+	_, err := domain.List(1, 10)
+	if err == nil {
+		t.Error("Expected error when storage fails, got nil")
+	}
+
+	// Verifica se o storage foi chamado
+	if len(storage.GetCallHistory()) != 1 {
+		t.Errorf("Expected 1 call to ListDomains, got %d", len(storage.GetCallHistory()))
+	}
+}
+
 // TestGetDomainStorageError testa erro do storage ao buscar domínio (white-box)
 func TestGetDomainStorageError(t *testing.T) {
-    storage := helpers.NewMockStorage()
-    storage.SetGetDomainError(true) // Você precisa adicionar este método no MockStorage
-    domain := NewDomain(storage)
+	storage := helpers.NewMockStorage()
+	storage.SetGetDomainError(true) // Você precisa adicionar este método no MockStorage
+	domain := NewDomain(storage)
 
-    validID := uuid.New()
+	validID := uuid.New()
 
-    if _, err := domain.Get(validID); err == nil {
-        t.Error("Expected error when storage fails, got nil")
-    }
+	if _, err := domain.Get(validID); err == nil {
+		t.Error("Expected error when storage fails, got nil")
+	}
 
-    // Verifica se o storage foi chamado
-    if len(storage.GetCallHistory()) != 1 {
-        t.Errorf("Expected 1 call to GetDomain, got %d", len(storage.GetCallHistory()))
-    }
+	// Verifica se o storage foi chamado
+	if len(storage.GetCallHistory()) != 1 {
+		t.Errorf("Expected 1 call to GetDomain, got %d", len(storage.GetCallHistory()))
+	}
 }
 
 func TestIsValidUUID(t *testing.T) {
-    tests := []struct {
-        name     string
-        id       uuid.UUID
-        expected bool
-    }{
-        {
-            name:     "Nil UUID should be invalid",
-            id:       uuid.Nil,
-            expected: false,
-        },
-        {
-            name:     "Valid UUID should be valid",
-            id:       uuid.New(),
-            expected: true,
-        },
-        {
-            name:     "Predefined UUID should be valid",
-            id:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-            expected: true,
-        },
-    }
+	tests := []struct {
+		name     string
+		id       uuid.UUID
+		expected bool
+	}{
+		{
+			name:     "Nil UUID should be invalid",
+			id:       uuid.Nil,
+			expected: false,
+		},
+		{
+			name:     "Valid UUID should be valid",
+			id:       uuid.New(),
+			expected: true,
+		},
+		{
+			name:     "Predefined UUID should be valid",
+			id:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+			expected: true,
+		},
+	}
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := isValidUUID(tt.id)
-            if result != tt.expected {
-                t.Errorf("isValidUUID(%v) = %v, expected %v", tt.id, result, tt.expected)
-            }
-        })
-    }
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidUUID(tt.id)
+			if result != tt.expected {
+				t.Errorf("isValidUUID(%v) = %v, expected %v", tt.id, result, tt.expected)
+			}
+		})
+	}
 }

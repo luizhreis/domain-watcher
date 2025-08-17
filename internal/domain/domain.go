@@ -1,17 +1,34 @@
 package domain
 
-import "github.com/luizhreis/domain-watcher/internal/models"
+import (
+	"time"
 
-type domain struct{}
+	"github.com/google/uuid"
+	"github.com/luizhreis/domain-watcher/internal/models"
+	"github.com/luizhreis/domain-watcher/internal/storage"
+)
+
+type domain struct {
+	storage storage.Storage
+}
 
 var _ Domain = (*domain)(nil)
 
-func NewDomain() Domain {
-	return &domain{}
+func NewDomain(storage storage.Storage) Domain {
+	return &domain{
+		storage: storage,
+	}
 }
 
-func (d *domain) CreateDomain(domain *models.Domain) error {
-	// Implementation for creating a domain
-	// This is a placeholder; actual implementation would interact with storage or database
+func (d *domain) Create(domain *models.Domain) error {
+	timestamp := time.Now()
+	domain.ID = uuid.New() 
+	domain.CreatedAt = timestamp
+	domain.UpdatedAt = timestamp
+
+	if err := d.storage.CreateDomain(domain); err != nil {
+		return err
+	}
+
 	return nil
 }

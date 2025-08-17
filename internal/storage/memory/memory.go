@@ -58,6 +58,34 @@ func (m *MemoryStorage) GetAllDomains() ([]*models.Domain, error) {
 	return domains, nil
 }
 
+// ListDomains retorna domínios com paginação
+func (m *MemoryStorage) ListDomains(page, pageSize int) ([]*models.Domain, error) {
+	if page < 1 || pageSize < 1 {
+		return nil, errors.New("page and pageSize must be greater than 0")
+	}
+
+	// Converte map para slice para permitir paginação
+	allDomains := make([]*models.Domain, 0, len(m.domains))
+	for _, domain := range m.domains {
+		allDomains = append(allDomains, domain)
+	}
+
+	// Calcula offset
+	startIndex := (page - 1) * pageSize
+	endIndex := startIndex + pageSize
+
+	// Verifica limites
+	if startIndex >= len(allDomains) {
+		return []*models.Domain{}, nil // Página vazia, mas não é erro
+	}
+
+	if endIndex > len(allDomains) {
+		endIndex = len(allDomains)
+	}
+
+	return allDomains[startIndex:endIndex], nil
+}
+
 // UpdateDomain atualiza um domínio existente
 func (m *MemoryStorage) UpdateDomain(domain *models.Domain) error {
 	if _, exists := m.domains[domain.ID]; !exists {

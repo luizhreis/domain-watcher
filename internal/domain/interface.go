@@ -7,4 +7,5 @@ import (
 
 type Domain interface {
 	Create(domain *models.Domain) (uuid.UUID, error)
+	Get(id uuid.UUID) (*models.Domain, error)
 }

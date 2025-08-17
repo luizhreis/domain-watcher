@@ -32,3 +32,20 @@ func (d *domain) Create(domain *models.Domain) (uuid.UUID, error) {
 
 	return id, nil
 }
+
+func (d *domain) Get(id uuid.UUID) (*models.Domain, error) {
+	if !isValidUUID(id) {
+		return nil, ErrInvalidUUID
+	}
+
+	domain, err := d.storage.GetDomain(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain, nil
+}
+
+func isValidUUID(id uuid.UUID) bool {
+	return id != uuid.Nil
+}

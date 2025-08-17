@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/luizhreis/domain-watcher/internal/models"
 	"github.com/luizhreis/domain-watcher/tests/helpers"
 )
@@ -25,8 +26,12 @@ func TestCreateDomain(t *testing.T) {
 		Timeout: 30,
 	}
 
-	if err := domain.Create(d); err != nil {
+	id, err := domain.Create(d)
+	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
+	}
+	if id == uuid.Nil {
+		t.Error("Expected a valid UUID, got nil")
 	}
 
 	// Verifica se o domínio foi criado
@@ -47,7 +52,7 @@ func TestCreateDomainError(t *testing.T) {
 		Timeout: 30,
 	}
 
-	if err := domain.Create(d); err == nil {
+	if _, err := domain.Create(d); err == nil {
 		t.Error("Expected error when creating domain, got nil")
 	}
 

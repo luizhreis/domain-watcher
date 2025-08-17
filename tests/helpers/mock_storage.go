@@ -24,18 +24,18 @@ func NewMockStorage() *MockStorage {
 	}
 }
 
-func (m *MockStorage) CreateDomain(domain *models.Domain) error {
+func (m *MockStorage) CreateDomain(domain *models.Domain) (uuid.UUID, error) {
 	m.callHistory = append(m.callHistory, "CreateDomain")
 
 	if m.createDomainShouldError {
-		return errors.New("simulated CreateDomain error")
+		return uuid.Nil, errors.New("simulated CreateDomain error")
 	}
 
 	if domain.ID == uuid.Nil {
 		domain.ID = uuid.New()
 	}
 	m.domains[domain.ID] = domain
-	return nil
+	return domain.ID, nil
 }
 
 func (m *MockStorage) GetDomain(id uuid.UUID) (*models.Domain, error) {

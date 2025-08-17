@@ -15,6 +15,8 @@ type MockStorage struct {
 	createDomainShouldError bool
 	getDomainShouldError    bool
 	listDomainsShouldError  bool
+	updateDomainShouldError bool
+	deleteDomainShouldError bool
 }
 
 var _ storage.Storage = (*MockStorage)(nil)
@@ -98,6 +100,11 @@ func (m *MockStorage) ListDomains(page, pageSize int) ([]*models.Domain, error) 
 
 func (m *MockStorage) UpdateDomain(domain *models.Domain) error {
 	m.callHistory = append(m.callHistory, "UpdateDomain")
+
+	if m.updateDomainShouldError {
+		return errors.New("mock update domain error")
+	}
+
 	if _, exists := m.domains[domain.ID]; !exists {
 		return storage.ErrDomainNotFound
 	}
@@ -107,6 +114,11 @@ func (m *MockStorage) UpdateDomain(domain *models.Domain) error {
 
 func (m *MockStorage) DeleteDomain(id uuid.UUID) error {
 	m.callHistory = append(m.callHistory, "DeleteDomain")
+
+	if m.deleteDomainShouldError {
+		return errors.New("mock delete domain error")
+	}
+
 	if _, exists := m.domains[id]; !exists {
 		return storage.ErrDomainNotFound
 	}
@@ -127,6 +139,8 @@ func (m *MockStorage) Reset() {
 	m.createDomainShouldError = false
 	m.getDomainShouldError = false
 	m.listDomainsShouldError = false
+	m.updateDomainShouldError = false
+	m.deleteDomainShouldError = false
 	m.ClearCallHistory()
 }
 
@@ -140,4 +154,12 @@ func (m *MockStorage) SetGetDomainError(shouldError bool) {
 
 func (m *MockStorage) SetListDomainsError(shouldError bool) {
 	m.listDomainsShouldError = shouldError
+}
+
+func (m *MockStorage) SetUpdateDomainError(shouldError bool) {
+	m.updateDomainShouldError = shouldError
+}
+
+func (m *MockStorage) SetDeleteDomainError(shouldError bool) {
+	m.deleteDomainShouldError = shouldError
 }

@@ -4,6 +4,8 @@ import "github.com/luizhreis/domain-watcher/internal/models"
 
 type domain struct{}
 
+var _ Domain = (*domain)(nil)
+
 func NewDomain() Domain {
 	return &domain{}
 }
